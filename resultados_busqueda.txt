@@ -1,0 +1,4 @@
+Nodo 20 encontrado en la altura: 1
+Nodo 9 encontrado en la altura: 3
+Nodo 35 encontrado en la altura: 0
+Nodo 40 encontrado en la altura: 0
