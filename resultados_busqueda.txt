@@ -2,3 +2,9 @@ Nodo 20 encontrado en la altura: 1
 Nodo 9 encontrado en la altura: 3
 Nodo 35 encontrado en la altura: 0
 Nodo 40 encontrado en la altura: 0
+Nodo 10 encontrado en la altura: 2
+Nodo 25 encontrado en la altura: 3
+Nodo 4 encontrado en la altura: 3
+Nodo 6 encontrado en la altura: 4
+Nodo 56 encontrado en la altura: 1
+Nodo 25 encontrado en la altura: 2

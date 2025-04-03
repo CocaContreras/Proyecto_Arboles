@@ -4,29 +4,73 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
-import java.util.List;
+import java.util.List;  
 import java.util.ArrayList;
-
 
 class Nodo {
     int valor;
     Nodo izquierda, derecha;
+    int altura;
 
     public Nodo(int valor) {
         this.valor = valor;
+        this.altura = 1;
         izquierda = derecha = null;
     }
 }
 
-class ArbolBinario {
+class ArbolAVL {
     Nodo raiz;
     List<Integer> recorrido;
 
-    public ArbolBinario() {
+    public ArbolAVL() {
         raiz = null;
         recorrido = new ArrayList<>();
     }
 
+    // Métodos de altura y balance
+    private int altura(Nodo n) {
+        return n == null ? 0 : n.altura;
+    }
+
+    private int getBalance(Nodo n) {
+        return n == null ? 0 : altura(n.izquierda) - altura(n.derecha);
+    }
+
+    private void actualizarAltura(Nodo n) {
+        if (n != null) {
+            n.altura = 1 + Math.max(altura(n.izquierda), altura(n.derecha));
+        }
+    }
+
+    // Rotaciones AVL
+    private Nodo rotarDerecha(Nodo y) {
+        Nodo x = y.izquierda;
+        Nodo T2 = x.derecha;
+
+        x.derecha = y;
+        y.izquierda = T2;
+
+        actualizarAltura(y);
+        actualizarAltura(x);
+
+        return x;
+    }
+
+    private Nodo rotarIzquierda(Nodo x) {
+        Nodo y = x.derecha;
+        Nodo T2 = y.izquierda;
+
+        y.izquierda = x;
+        x.derecha = T2;
+
+        actualizarAltura(x);
+        actualizarAltura(y);
+
+        return y;
+    }
+
+    // Inserción AVL
     public void insertar(int valor) {
         raiz = insertarRecursivo(raiz, valor);
     }
@@ -35,14 +79,86 @@ class ArbolBinario {
         if (nodo == null) {
             return new Nodo(valor);
         }
+
         if (valor < nodo.valor) {
             nodo.izquierda = insertarRecursivo(nodo.izquierda, valor);
         } else if (valor > nodo.valor) {
             nodo.derecha = insertarRecursivo(nodo.derecha, valor);
+        } else {
+            return nodo; // No duplicados
         }
+
+        actualizarAltura(nodo);
+        return balancear(nodo, valor);
+    }
+
+    // Eliminación AVL
+    public void eliminar(int valor) {
+        raiz = eliminarNodo(raiz, valor);
+    }
+
+    private Nodo eliminarNodo(Nodo nodo, int valor) {
+        if (nodo == null) {
+            return null;
+        }
+
+        if (valor < nodo.valor) {
+            nodo.izquierda = eliminarNodo(nodo.izquierda, valor);
+        } else if (valor > nodo.valor) {
+            nodo.derecha = eliminarNodo(nodo.derecha, valor);
+        } else {
+            if (nodo.izquierda == null || nodo.derecha == null) {
+                Nodo temp = (nodo.izquierda != null) ? nodo.izquierda : nodo.derecha;
+                if (temp == null) {
+                    temp = nodo;
+                    nodo = null;
+                } else {
+                    nodo = temp;
+                }
+            } else {
+                Nodo temp = encontrarMinimo(nodo.derecha);
+                nodo.valor = temp.valor;
+                nodo.derecha = eliminarNodo(nodo.derecha, temp.valor);
+            }
+        }
+
+        if (nodo == null) {
+            return null;
+        }
+
+        actualizarAltura(nodo);
+        return balancear(nodo, nodo.valor);
+    }
+
+    private Nodo balancear(Nodo nodo, int valor) {
+        int balance = getBalance(nodo);
+
+        // Caso izquierda-izquierda
+        if (balance > 1 && valor < nodo.izquierda.valor) {
+            return rotarDerecha(nodo);
+        }
+
+        // Caso derecha-derecha
+        if (balance < -1 && valor > nodo.derecha.valor) {
+            return rotarIzquierda(nodo);
+        }
+
+        // Caso izquierda-derecha
+        if (balance > 1 && valor > nodo.izquierda.valor) {
+            nodo.izquierda = rotarIzquierda(nodo.izquierda);
+            return rotarDerecha(nodo);
+        }
+
+        // Caso derecha-izquierda
+        if (balance < -1 && valor < nodo.derecha.valor) {
+            nodo.derecha = rotarDerecha(nodo.derecha);
+            return rotarIzquierda(nodo);
+        }
+
         return nodo;
     }
 
+    // Métodos de recorrido (se mantienen igual)
     public List<Integer> recorridoInorden() {
         recorrido.clear();
         inorden(raiz);
@@ -85,64 +201,42 @@ class ArbolBinario {
         }
     }
 
-    public void eliminar(int valor) {
-        raiz = eliminarNodo(raiz, valor);
-    }
-
-    private Nodo eliminarNodo(Nodo nodo, int valor) {
-        if (nodo == null) {
-            return null;
-        }
-        if (valor < nodo.valor) {
-            nodo.izquierda = eliminarNodo(nodo.izquierda, valor);
-        } else if (valor > nodo.valor) {
-            nodo.derecha = eliminarNodo(nodo.derecha, valor);
-        } else {
-            if (nodo.izquierda == null) return nodo.derecha;
-            if (nodo.derecha == null) return nodo.izquierda;
-
-            nodo.valor = encontrarMinimo(nodo.derecha);
-            nodo.derecha = eliminarNodo(nodo.derecha, nodo.valor);
-        }
-        return nodo;
-    }
-    
-
-    private int encontrarMinimo(Nodo nodo) {
+    private Nodo encontrarMinimo(Nodo nodo) {
         while (nodo.izquierda != null) {
             nodo = nodo.izquierda;
         }
-        return nodo.valor;
+        return nodo;
     }
-    public int buscarAltura(int valor) {
-    return buscarAlturaRecursivo(raiz, valor, 0);
-}
 
-private int buscarAlturaRecursivo(Nodo nodo, int valor, int altura) {
-    if (nodo == null) {
-        return -1; // Nodo no encontrado
+    public int buscarAltura(int valor) {
+        return buscarAlturaRecursivo(raiz, valor, 0);
     }
-    if (nodo.valor == valor) {
-        return altura;
+
+    private int buscarAlturaRecursivo(Nodo nodo, int valor, int altura) {
+        if (nodo == null) {
+            return -1;
+        }
+        if (nodo.valor == valor) {
+            return altura;
+        }
+        if (valor < nodo.valor) {
+            return buscarAlturaRecursivo(nodo.izquierda, valor, altura + 1);
+        } else {
+            return buscarAlturaRecursivo(nodo.derecha, valor, altura + 1);
+        }
     }
-    if (valor < nodo.valor) {
-        return buscarAlturaRecursivo(nodo.izquierda, valor, altura + 1);
-    } else {
-        return buscarAlturaRecursivo(nodo.derecha, valor, altura + 1);
-    }
-  }
 }
 
 public class Proyecto_Arbol extends JFrame {
-    private final ArbolBinario arbol;
+    private final ArbolAVL arbol;
     private final JPanel panelDibujo;
     private final JLabel labelRecorrido;
 
     public Proyecto_Arbol() {
-        arbol = new ArbolBinario();
+        arbol = new ArbolAVL();
         
-        setTitle("Árbol Binario");
-        setSize(700, 500);
+        setTitle("Árbol AVL");
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -184,7 +278,6 @@ public class Proyecto_Arbol extends JFrame {
         btnAgregar.addActionListener(e -> agregarNodo());
         btnEliminar.addActionListener(e -> eliminarNodo());
         btnBuscar.addActionListener(e -> buscarNodo());
-
     }
 
     private void actualizarRecorrido(List<Integer> recorrido) {
@@ -242,50 +335,50 @@ public class Proyecto_Arbol extends JFrame {
             JOptionPane.showMessageDialog(this, "Ingrese un número válido.");
         }
     }
+
     private void buscarNodo() {
-    String valorStr = JOptionPane.showInputDialog("Ingrese el valor a buscar:");
-    try {
-        int valor = Integer.parseInt(valorStr);
-        int altura = arbol.buscarAltura(valor);
-        String resultado;
-        if (altura == -1) {
-            resultado = "Nodo " + valor + " no encontrado en el árbol.";
-            JOptionPane.showMessageDialog(this, resultado);
-        } else {
-            resultado = "Nodo " + valor + " encontrado en la altura: " + altura;
-            JOptionPane.showMessageDialog(this, resultado);
+        String valorStr = JOptionPane.showInputDialog("Ingrese el valor a buscar:");
+        try {
+            int valor = Integer.parseInt(valorStr);
+            int altura = arbol.buscarAltura(valor);
+            String resultado;
+            if (altura == -1) {
+                resultado = "Nodo " + valor + " no encontrado en el árbol.";
+                JOptionPane.showMessageDialog(this, resultado);
+            } else {
+                resultado = "Nodo " + valor + " encontrado en la altura: " + altura;
+                JOptionPane.showMessageDialog(this, resultado);
+            }
+            guardarEnArchivo(resultado, "resultados_busqueda.txt");
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Ingrese un número válido.");
         }
-        // Guardar el resultado en un archivo
-        guardarEnArchivo(resultado, "resultados_busqueda.txt");
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "Ingrese un número válido.");
     }
-}
 
-   private void guardarEnArchivo(String contenido, String nombreArchivo) {
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivo, true))) { // "true" para agregar contenido
-        bw.write(contenido);
-        bw.newLine(); // Agrega una nueva línea al final
-
-        // Imprimir la ruta del archivo en consola
-        File archivo = new File(nombreArchivo);
-        System.out.println("Archivo guardado en: " + archivo.getAbsolutePath());
-
-        JOptionPane.showMessageDialog(this, "Resultado guardado en el archivo: " + nombreArchivo);
-    } catch (IOException e) {
-        JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + e.getMessage());
+    private void guardarEnArchivo(String contenido, String nombreArchivo) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(nombreArchivo, true))) {
+            bw.write(contenido);
+            bw.newLine();
+            File archivo = new File(nombreArchivo);
+            System.out.println("Archivo guardado en: " + archivo.getAbsolutePath());
+            JOptionPane.showMessageDialog(this, "Resultado guardado en el archivo: " + nombreArchivo);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + e.getMessage());
+        }
     }
-}
 
-
-
-    
     private void dibujarArbol(Graphics g, int x, int y, Nodo nodo, int espacio) {
         if (nodo == null) return;
+        
+        // Dibujar nodo con información de altura y balance
         g.setColor(Color.BLACK);
         g.fillOval(x - 15, y - 15, 30, 30);
         g.setColor(Color.WHITE);
         g.drawString(String.valueOf(nodo.valor), x - 5, y + 5);
+        
+        // Mostrar altura y factor de balance (opcional)
+        g.setColor(Color.BLUE);
+        g.drawString("h:" + nodo.altura, x - 15, y + 25);
         
         if (nodo.izquierda != null) {
             g.setColor(Color.BLACK);
@@ -300,7 +393,9 @@ public class Proyecto_Arbol extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Proyecto_Arbol().setVisible(true));
+        SwingUtilities.invokeLater(() -> {
+            Proyecto_Arbol frame = new Proyecto_Arbol();
+            frame.setVisible(true);
+        });
     }
 }
-    
